@@ -28,7 +28,7 @@ module.exports = {
           location
         });
       }catch(err){
-        return res.status(404).json({error:'githun_user not exist'});
+        return err.message === "Request failed with status code 404" ? res.status(404).json({error:"github_user not exist in github"}) : res.status(500).json({error:err.message});
       }
     }
     return res.json(dev);
@@ -49,17 +49,16 @@ module.exports = {
 
     if(dev) {
         const apiRes = await axios.get(`https://api.github.com/users/${dev.github_user}`);
-        console.log(apiRes.data);
         const { name = login, avatar_url, bio } = apiRes.data;   
     
-        const techsArray = parseStringAsArray(techs);
+        const techsArray = techs ? parseStringAsArray(techs) : dev.techs;
     
-        const location = {
+        const location = latitude && longitude ? {
             type: 'Point',
             coordinates: [longitude, latitude],
-        };
+        } : dev.location;
     
-        await Dev.updateOne({
+        await Dev.updateOne({_id},{
             name,
             avatar_url,
             bio,
@@ -79,7 +78,7 @@ module.exports = {
       await Dev.deleteOne({ _id }, function (err) {});
       return res.json({message:`user removed`});
     }catch(err){
-      return res.status(401).json({error:err.message});
+      return res.status(500).json({error:err.message});
     }
   }
 }

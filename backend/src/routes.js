@@ -1,13 +1,19 @@
 const {Router} = require('express');
+
 const routes = Router();
 
+const DevController = require('./controllers/DevController');
+const SearchController = require('./controllers/SearchController');
+
 routes.get('/',(req,res)=>{
-  return res.json({status:'online'})
+  return res.json({status:'online'});
 });
 
-routes.post('/devs',(req,res)=>{
-  const { github_user } = req.body;
-  return res.json({user:github_user});
-})
+routes.get('/devs',DevController.index);
+routes.post('/devs',DevController.store);
+routes.put('/devs/:_id',DevController.update);
+routes.delete('/devs/:_id',DevController.destroy);
+
+routes.get('/search',SearchController.index);
 
 module.exports = routes;

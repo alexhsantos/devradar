@@ -1,10 +1,12 @@
 const axios = require('axios');
 const Dev = require('../models/Dev');
 const parseStringAsArray = require('../utils/parseStringAsArray');
+const {findConnections, sendMessage} = require('../websocket');
 
 module.exports = {
   async store(req,res){
     const { github_user, techs, latitude, longitude } = req.body;
+    const techArray = parseStringAsArray(techs);
 
     let dev = await Dev.findOne({ github_user });
 
@@ -12,7 +14,6 @@ module.exports = {
       try{
         const apiRes = await axios.get(`https://api.github.com/users/${github_user}`);
         const { name = login, avatar_url, bio } = apiRes.data;
-        const techArray = parseStringAsArray(techs);
       
         const location = {
           type:'Point',
@@ -26,11 +27,20 @@ module.exports = {
           avatar_url,
           techs: techArray,
           location
-        });
+        });        
       }catch(err){
         return err.message === "Request failed with status code 404" ? res.status(404).json({error:"github_user not exist in github"}) : res.status(500).json({error:err.message});
       }
     }
+
+    const sendSocketMessageTo = findConnections(
+      {latitude, longitude},
+      techArray
+    );
+    //console.log(sendSocketMessageTo);
+
+    sendMessage(sendSocketMessageTo,'new-dev',dev);
+
     return res.json(dev);
   },
 
